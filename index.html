@@ -7,29 +7,79 @@
     <!-- SortableJSライブラリの読み込み -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     
-    <!-- CSSの統合 -->
     <style>
+        /* CSSカスタムプロパティ（変数）の定義 */
+        :root {
+            --primary-color: #2a9d8f;
+            --secondary-color: #e76f51;
+            --accent-color: #e9c46a;
+            --text-color: #333;
+            --text-color-light: #fff;
+            --bg-color: #f4f7f6;
+            --border-color: #eee;
+            --holiday-color: #dc3545;
+            --saturday-color: #007bff;
+            --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+            
+            /* イベントごとの色 */
+            --event-shoyu-bg: #343a40;
+            --event-miso-bg: #28a745;
+            --event-natto-bg: #dc3545;
+            --event-yasumi-bg: #8a63d2;
+            --event-default-bg: #e9c46a;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
-            background-color: #f4f7f6;
+            font-family: var(--font-family);
+            background-color: var(--bg-color);
             margin: 0;
             padding: 10px 0;
-            color: #333;
+            padding-top: 40px; 
+            color: var(--text-color);
+        }
+
+        #save-status {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            padding: 10px 0;
+            height: 20px;
+            font-weight: 500;
+            transition: opacity 0.5s, color 0.5s, background-color 0.5s;
+            opacity: 0;
+            z-index: 1001;
+            background-color: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        #save-status.is-visible {
+            opacity: 1;
+        }
+        #save-status.is-saving {
+            color: #888;
+        }
+        #save-status.is-saved {
+            color: var(--primary-color);
+        }
+        #save-status.is-error {
+            color: var(--secondary-color);
         }
 
         .calendar-container {
             width: 95%;
             max-width: 900px;
             margin: auto;
-            background: #fff;
+            background: var(--text-color-light);
             box-shadow: 0 6px 12px rgba(0,0,0,0.1);
             border-radius: 10px;
             overflow: hidden;
             transition: box-shadow 0.3s ease-in-out;
+            margin-top: 0; 
         }
 
         .calendar-container.drag-mode-active {
-            box-shadow: 0 0 0 3px #e76f51, 0 6px 12px rgba(0,0,0,0.1);
+            box-shadow: 0 0 0 3px var(--secondary-color), 0 6px 12px rgba(0,0,0,0.1);
         }
 
         .edit-mode-container {
@@ -53,24 +103,24 @@
         }
 
         #drag-mode-toggle.active {
-            background-color: #e76f51;
-            color: white;
-            border-color: #e76f51;
+            background-color: var(--secondary-color);
+            color: var(--text-color-light);
+            border-color: var(--secondary-color);
         }
 
         .calendar-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px 25px;
-            background-color: #2a9d8f;
-            color: white;
+            padding: 12px 20px;
+            background-color: var(--primary-color);
+            color: var(--text-color-light);
         }
 
         .calendar-header button {
             background: none;
             border: none;
-            color: white;
+            color: var(--text-color-light);
             font-size: 1.8em;
             cursor: pointer;
             transition: transform 0.2s;
@@ -80,9 +130,34 @@
             transform: scale(1.1);
         }
 
+        .header-center {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
         #month-year {
             font-size: 1.4em;
             font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        #list-view-toggle, #print-list-btn {
+            font-size: 0.9em;
+            padding: 8px 15px;
+            border-radius: 5px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--text-color-light);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            cursor: pointer;
+            transition: background-color 0.2s;
+            white-space: nowrap;
+        }
+        #list-view-toggle:hover, #print-list-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
         }
 
         .calendar-grid {
@@ -94,7 +169,7 @@
         .calendar-grid th {
             text-align: center;
             padding: 12px 5px;
-            border-bottom: 2px solid #eee;
+            border-bottom: 2px solid var(--border-color);
             background-color: #f9f9f9;
             font-size: 0.9em;
             font-weight: 600;
@@ -103,16 +178,8 @@
             white-space: nowrap;
         }
 
-        .th-weekday {
-            width: calc((100% - 40px) * 0.1666);
-        }
-
-        .th-weekend {
-            width: calc((100% - 40px) * 0.0833);
-        }
-
         .calendar-grid td {
-            border: 1px solid #eee;
+            border: 1px solid var(--border-color);
             vertical-align: top;
             height: 150px;
             padding: 4px;
@@ -143,8 +210,8 @@
         }
 
         .calendar-grid td.today .day-number {
-            background-color: #2a9d8f;
-            color: white !important;
+            background-color: var(--primary-color);
+            color: var(--text-color-light) !important;
         }
 
         .calendar-grid td.other-month {
@@ -152,22 +219,16 @@
             background-color: #fafafa;
         }
         
-        /* ★★★ 修正点: other-monthでもホバー効果を有効に */
         .calendar-grid td.other-month:hover {
             background-color: #e9f5ff;
         }
 
-        .day-number.saturday {
-            color: #007bff;
-        }
-
-        .day-number.sunday, .day-number.holiday {
-            color: #dc3545;
-        }
+        .day-number.saturday { color: var(--saturday-color); }
+        .day-number.sunday, .day-number.holiday { color: var(--holiday-color); }
 
         .holiday-name {
             font-size: 0.7em;
-            color: #dc3545;
+            color: var(--holiday-color);
             margin-left: 4px;
             white-space: nowrap;
             overflow: hidden;
@@ -192,32 +253,25 @@
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            color: var(--text-color-light);
         }
 
-        .events-list li.event-default {
-            background-color: #e9c46a;
-            color: #333;
+        /* ★★★ 変更点: イベントの背景色指定をspanに限定 ★★★ */
+        .events-list li.event-shoyu, .list-view-event-item > span.event-shoyu { background-color: var(--event-shoyu-bg); }
+        .events-list li.event-miso, .list-view-event-item > span.event-miso { background-color: var(--event-miso-bg); }
+        .events-list li.event-natto, .list-view-event-item > span.event-natto { background-color: var(--event-natto-bg); }
+        .events-list li.event-yasumi, .list-view-event-item > span.event-yasumi { background-color: var(--event-yasumi-bg); }
+        .events-list li.event-default, .list-view-event-item > span.event-default {
+            background-color: var(--event-default-bg);
+            color: var(--text-color);
+        }
+        .list-view-event-item > span.event-shoyu,
+        .list-view-event-item > span.event-miso,
+        .list-view-event-item > span.event-natto,
+        .list-view-event-item > span.event-yasumi {
+            color: var(--text-color-light);
         }
 
-        .events-list li.event-shoyu {
-            background-color: #343a40;
-            color: white;
-        }
-
-        .events-list li.event-miso {
-            background-color: #28a745;
-            color: white;
-        }
-
-        .events-list li.event-natto {
-            background-color: #dc3545;
-            color: white;
-        }
-
-        .events-list li.event-yasumi {
-            background-color: #8a63d2;
-            color: white;
-        }
 
         .drag-handle {
             cursor: grab;
@@ -225,14 +279,8 @@
             opacity: 0.3;
             transition: opacity 0.2s;
         }
-
-        .drag-handle:hover {
-            opacity: 0.8;
-        }
-
-        .drag-handle:active {
-            cursor: grabbing;
-        }
+        .drag-handle:hover { opacity: 0.8; }
+        .drag-handle:active { cursor: grabbing; }
 
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -241,146 +289,161 @@
         }
 
         .modal-content {
-            background: white; padding: 25px; border-radius: 8px;
+            background: var(--text-color-light); padding: 25px; border-radius: 8px;
             width: 90%; max-width: 450px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
         }
 
         .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-bottom: 15px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 10px; margin-bottom: 15px;
         }
 
         .modal-close {
-            font-size: 1.8rem;
-            font-weight: bold;
-            cursor: pointer;
-            border: none;
-            background: none;
-            color: #888;
+            font-size: 1.8rem; font-weight: bold; cursor: pointer;
+            border: none; background: none; color: #888;
         }
 
         #event-date {
-            font-size: 1.2em;
-            font-weight: 600;
-            color: #2a9d8f;
+            font-size: 1.2em; font-weight: 600;
+            color: var(--primary-color);
         }
 
         #template-buttons {
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
+            margin-bottom: 20px; padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex; flex-wrap: wrap; gap: 8px;
         }
 
         .template-btn {
-            background-color: #f0f0f0;
-            border: 1px solid #ddd;
-            border-radius: 15px;
-            padding: 5px 12px;
-            cursor: pointer;
-            font-size: 0.9em;
+            background-color: #f0f0f0; border: 1px solid #ddd;
+            border-radius: 15px; padding: 5px 12px;
+            cursor: pointer; font-size: 0.9em;
             transition: background-color 0.2s;
         }
-
-        .template-btn:hover {
-            background-color: #e0e0e0;
-        }
+        .template-btn:hover { background-color: #e0e0e0; }
 
         #modal-events-list {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 20px;
-            max-height: 150px;
+            list-style: none; padding: 0; margin: 0 0 20px;
+            max-height: 40vh;
             overflow-y: auto;
         }
 
         #modal-events-list li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px;
-            border-bottom: 1px solid #f0f0f0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px; border-bottom: 1px solid #f0f0f0;
         }
 
-        #modal-events-list .event-text {
-            flex-grow: 1;
-            cursor: pointer;
-            padding: 5px;
-        }
-
+        #modal-events-list .event-text { flex-grow: 1; cursor: pointer; padding: 5px; }
         #modal-events-list .event-input {
-            flex-grow: 1;
-            border: 1px solid #2a9d8f;
-            border-radius: 4px;
-            padding: 5px;
+            flex-grow: 1; border: 1px solid var(--primary-color);
+            border-radius: 4px; padding: 5px;
         }
 
         .delete-event {
-            background: #e76f51;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            padding: 4px 8px;
-            font-size: 0.8em;
-            margin-left: 10px;
+            background: var(--secondary-color); color: var(--text-color-light);
+            border: none; border-radius: 4px; cursor: pointer;
+            padding: 4px 8px; font-size: 0.8em; margin-left: 10px;
         }
 
-        .add-event-form {
-            display: flex;
-        }
-
+        .add-event-form { display: flex; }
         #new-event-text {
-            flex-grow: 1;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            padding: 10px;
-            margin-right: 10px;
+            flex-grow: 1; border: 1px solid #ccc;
+            border-radius: 4px; padding: 10px; margin-right: 10px;
         }
-
         #add-event-button {
-            background-color: #2a9d8f;
-            color: white;
-            border: none;
-            padding: 10px 15px;
+            background-color: var(--primary-color); color: var(--text-color-light);
+            border: none; padding: 10px 15px; border-radius: 5px;
+            cursor: pointer; font-weight: 500;
+        }
+
+        #list-view {
+            padding: 15px 25px;
+            background-color: var(--text-color-light);
+            touch-action: pan-y;
+        }
+        
+        #print-title {
+            display: none;
+        }
+
+        .list-view-events {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .list-view-day-item {
+            margin-bottom: 2px;
+            border-bottom: 1px solid var(--border-color);
+            padding: 10px 8px;
+            cursor: pointer;
+            transition: background-color 0.2s;
             border-radius: 5px;
-            cursor: pointer;
-            font-weight: 500;
+        }
+        .list-view-day-item:hover {
+            background-color: #f9f9f9;
+        }
+        .list-view-day-item:last-child {
+            border-bottom: none;
+        }
+        .list-view-date-header {
+            font-size: 1.1em;
+            margin-bottom: 5px;
+            color: var(--text-color);
+        }
+        .list-view-date-header strong {
+            color: var(--primary-color);
+        }
+        .list-view-holiday-name {
+            color: var(--holiday-color);
+            font-size: 0.9em;
+            margin-left: 5px;
+        }
+        .list-view-day-events {
+            list-style: none;
+            padding-left: 15px;
+            margin: 0;
+        }
+        /* ★★★ 変更点: li自体のスタイルを調整 ★★★ */
+        .list-view-event-item {
+            padding: 0;
+            font-size: 0.9em;
+            margin-bottom: 3px;
+        }
+        /* ★★★ 変更点: テキストを囲むspanのスタイルを追加 ★★★ */
+        .list-view-event-item > span {
+            padding: 4px 8px;
+            border-radius: 3px;
+            display: inline-block; /* 背景色をテキスト幅に合わせる */
         }
 
-        .print-week-btn-cell {
-            width: 40px;
-            padding: 0 !important;
-            text-align: center;
-            vertical-align: middle !important;
-            border: none !important;
-            background-color: #f9f9f9 !important;
+        .list-view-no-events {
+            padding-left: 15px;
+            margin: 5px 0;
+            color: #999;
+            font-size: 0.9em;
+            font-style: italic;
         }
 
-        .print-week-btn {
-            background: none;
-            border: none;
-            cursor: pointer;
-            font-size: 1.5em;
-            opacity: 0.5;
-            transition: opacity 0.2s;
-        }
-
-        .print-week-btn:hover {
-            opacity: 1;
-        }
 
         /* スマートフォン向けのスタイル */
         @media (max-width: 768px) {
-            body { padding: 0; }
+            body { padding: 0; padding-top: 40px; }
             .calendar-container { width: 100%; border-radius: 0; box-shadow: none; }
-            .calendar-header { padding: 15px; font-size: 0.9em; }
+            .calendar-header { padding: 10px 15px; }
+            .header-center {
+                position: static;
+                transform: none;
+                order: 2;
+                flex-grow: 1;
+                justify-content: center;
+            }
+            #prev-month { order: 1; }
+            #next-month { order: 3; }
+            #month-year { font-size: 1.1em; }
+            #list-view-toggle, #print-list-btn { font-size: 0.8em; padding: 6px 10px; }
+            #print-list-btn { display: none !important; }
+
             .calendar-grid th { padding: 8px 2px; font-size: 0.7em; }
             .th-weekday, .th-weekend { width: auto; }
             .calendar-grid td { height: 110px; padding: 4px; }
@@ -389,83 +452,78 @@
             .events-list li { padding: 2px 4px; }
             .modal-content { padding: 20px; }
             #event-date { font-size: 1.1em; }
-            .print-week-btn-cell { display: none; }
-        }
-
-        /* 印刷用のスタイル */
-        #print-view { display: none; }
-        .print-week {
-            page-break-inside: avoid;
-            margin-bottom: 20px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        .print-day {
-            padding: 12px 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .print-day:last-child {
-            border-bottom: none;
-        }
-        .print-day-header {
-            font-weight: bold;
-            font-size: 1.1em;
-            margin-bottom: 8px;
-        }
-        .print-day-header .weekday {
-            margin-left: 10px;
-        }
-        .print-events {
-            list-style-type: disc;
-            padding-left: 20px;
-            margin: 0;
-        }
-        .print-events li {
-            padding: 3px 0;
         }
 
         @media print {
             body {
-                background-color: #fff;
-                padding: 5mm 10mm;
+                background-color: var(--text-color-light);
+                padding: 0;
                 margin: 0;
-                font-size: 13pt;
+                font-size: 12pt;
             }
-            .calendar-container, .modal-overlay, .print-week-btn, .edit-mode-container { display: none; }
-            #print-view { display: block; }
-            h1.print-header {
+            .calendar-header, .edit-mode-container, #save-status, .modal-overlay {
+                display: none !important;
+            }
+            #list-view {
+                display: block !important;
+            }
+            #print-title {
+                display: block;
                 font-size: 16pt;
                 text-align: center;
-                margin-bottom: 2mm;
+                margin-bottom: 15px;
+                color: #000;
             }
-            p.print-sub-header {
-                font-size: 11pt;
-                text-align: center;
-                margin-top: 0;
-                margin-bottom: 10mm;
-                color: #555;
+            .calendar-container {
+                width: 100%;
+                max-width: 100%;
+                box-shadow: none;
+                border-radius: 0;
+                border: none;
+            }
+            #list-view {
+                padding: 5mm 10mm;
+            }
+            .list-view-day-item {
+                page-break-inside: avoid;
+            }
+            .list-view-day-item.has-no-events {
+                display: none;
+            }
+            .list-view-event-item {
+                font-size: 13pt;
+                padding: 4px 0;
+            }
+            /* ★★★ 変更点: 印刷時はspanのスタイルをリセット ★★★ */
+            .list-view-event-item > span {
+                padding: 0;
+                border-radius: 0;
+                color: #000 !important;
+                background-color: transparent !important;
             }
         }
 
-        @page {
-            size: auto;
-            margin: 0mm;
-        }
+        @page { size: auto; margin: 0mm; }
     </style>
 </head>
 <body>
 
+    <div id="save-status"></div>
+
     <div class="calendar-container">
         <div class="calendar-header">
             <button id="prev-month">&lt;</button>
-            <h2 id="month-year"></h2>
+            <div class="header-center">
+                <button id="print-list-btn" style="display: none;">印刷</button>
+                <h2 id="month-year"></h2>
+                <button id="list-view-toggle">リスト表示</button>
+            </div>
             <button id="next-month">&gt;</button>
         </div>
-        <table class="calendar-grid">
+
+        <table class="calendar-grid" id="calendar-grid-table">
             <thead>
                 <tr>
-                    <th class="print-week-btn-cell"></th>
                     <th class="th-weekend">日</th>
                     <th class="th-weekday">月</th>
                     <th class="th-weekday">火</th>
@@ -477,6 +535,10 @@
             </thead>
             <tbody id="calendar-body"></tbody>
         </table>
+
+        <div id="list-view" style="display: none;">
+            <h1 id="print-title"></h1>
+        </div>
     </div>
 
     <div class="edit-mode-container">
@@ -491,114 +553,112 @@
             </div>
             <div id="template-buttons"></div>
             <ul id="modal-events-list"></ul>
-            <div class="add-event-form">
+            <form class="add-event-form" id="add-event-form">
                 <input type="text" id="new-event-text" placeholder="または、自由に予定を入力...">
-                <button id="add-event-button">追加</button>
-            </div>
+                <button id="add-event-button" type="submit">追加</button>
+            </form>
         </div>
     </div>
 
-    <!-- 印刷専用エリア -->
-    <div id="print-view"></div>
-
-    <!-- JavaScriptの統合 -->
     <script>
-        // --- API Functions ---
-        const GAS_API_URL = 'https://script.google.com/macros/s/AKfycbwT0kajqjvz9XxV9t1-_o8r6bH3fDK1zOYDf2gC1bKcOmxNxFc3BquUfCibDE22vmjO/exec';
-        const HOLIDAY_API_URL = 'https://holidays-jp.github.io/api/v1/date.json';
+    document.addEventListener('DOMContentLoaded', () => {
 
-        async function fetchAllEvents() {
-            try {
-                const response = await fetch(GAS_API_URL);
-                if (!response.ok) throw new Error('データの読み込みに失敗しました。');
-                return await response.json();
-            } catch (error) {
-                console.error('Error loading events:', error);
-                alert('データの読み込みに失敗しました。GASのデプロイ設定を確認してください。');
-                return {};
-            }
-        }
-
-        async function saveAllEvents(events) {
-            try {
-                await fetch(GAS_API_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ events: events }),
-                });
-                console.log('Save request sent.');
-            } catch (error) {
-                console.error('Error saving events:', error);
-                alert('データの保存中にエラーが発生しました。');
-            }
-        }
-
-        async function fetchHolidays() {
-            try {
-                const response = await fetch(HOLIDAY_API_URL);
-                if (!response.ok) throw new Error('祝日データの読み込みに失敗しました。');
-                return await response.json();
-            } catch (error) {
-                console.error('Error loading holidays:', error);
-                return {};
-            }
-        }
-
-        // --- Main Application Logic ---
-        document.addEventListener('DOMContentLoaded', () => {
-            new CalendarApp();
-        });
-
+        // --- 定数定義 ---
         const SELECTORS = {
-            calendarContainer: '.calendar-container',
-            monthYear: '#month-year',
-            calendarBody: '#calendar-body',
-            prevMonthBtn: '#prev-month',
-            nextMonthBtn: '#next-month',
-            eventModal: '#event-modal',
-            modalCloseBtn: '.modal-close',
-            eventDate: '#event-date',
-            templateButtons: '#template-buttons',
-            modalEventsList: '#modal-events-list',
-            newEventText: '#new-event-text',
-            addEventBtn: '#add-event-button',
-            printView: '#print-view',
+            calendarContainer: '.calendar-container', monthYear: '#month-year', calendarBody: '#calendar-body',
+            prevMonthBtn: '#prev-month', nextMonthBtn: '#next-month', eventModal: '#event-modal',
+            modalCloseBtn: '.modal-close', eventDate: '#event-date', templateButtons: '#template-buttons',
+            modalEventsList: '#modal-events-list', newEventText: '#new-event-text', addEventForm: '#add-event-form',
             dragModeToggle: '#drag-mode-toggle',
+            saveStatus: '#save-status',
+            listViewToggle: '#list-view-toggle',
+            calendarGridTable: '#calendar-grid-table',
+            listView: '#list-view',
+            editModeContainer: '.edit-mode-container',
+            printListBtn: '#print-list-btn',
+            printTitle: '#print-title',
         };
-
         const CLASSES = {
-            dragHandle: 'drag-handle',
-            eventText: 'event-text',
-            eventInput: 'event-input',
-            deleteEvent: 'delete-event',
-            today: 'today',
-            otherMonth: 'other-month',
-            sunday: 'sunday',
-            saturday: 'saturday',
-            holiday: 'holiday',
-            holidayName: 'holiday-name',
-            dragModeActive: 'drag-mode-active',
+            dragHandle: 'drag-handle', eventText: 'event-text', eventInput: 'event-input', deleteEvent: 'delete-event',
+            today: 'today', otherMonth: 'other-month', sunday: 'sunday', saturday: 'saturday', holiday: 'holiday',
+            holidayName: 'holiday-name', dragModeActive: 'drag-mode-active',
+        };
+        const EVENT_TEMPLATES = ["【醤油】", "【味噌】", "【納豆】", "【休み】"];
+        const API_URLS = {
+            GAS: 'https://script.google.com/macros/s/AKfycbwT0kajqjvz9XxV9t1-_o8r6bH3fDK1zOYDf2gC1bKcOmxNxFc3BquUfCibDE22vmjO/exec',
+            HOLIDAYS: 'https://holidays-jp.github.io/api/v1/date.json',
         };
 
-        const EVENT_TEMPLATES = ["【醤油】", "【味噌】", "【納豆】", "【休み】"];
+        /**
+         * APIとの通信を担当するクラス
+         */
+        class ApiService {
+            async _fetchJSON(url, options = {}) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error(`Error fetching from ${url}:`, error);
+                    throw error;
+                }
+            }
 
+            fetchEvents() {
+                return this._fetchJSON(API_URLS.GAS).catch(() => {
+                    alert('データの読み込みに失敗しました。GASのデプロイ設定を確認してください。');
+                    return {};
+                });
+            }
+
+            saveEvents(events) {
+                return new Promise((resolve, reject) => {
+                    fetch(API_URLS.GAS, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ events }),
+                    })
+                    .then(() => {
+                        resolve();
+                    })
+                    .catch(error => {
+                        console.error('Error saving events:', error);
+                        alert('データの保存中にエラーが発生しました。');
+                        reject(error);
+                    });
+                });
+            }
+
+            fetchHolidays() {
+                return this._fetchJSON(API_URLS.HOLIDAYS).catch(() => ({}));
+            }
+        }
+
+        /**
+         * メインアプリケーションクラス
+         */
         class CalendarApp {
             constructor() {
-                this.elements = this.getDOMElements();
+                this.api = new ApiService();
+                this.elements = this._getDOMElements();
                 this.state = {
                     events: {},
                     holidays: {},
                     currentDate: new Date(),
                     selectedDate: null,
                     isDragModeEnabled: false,
+                    isListViewEnabled: false, 
                 };
                 this.modalSortable = null;
                 this.calendarSortableInstances = [];
-                this.initializeApp();
+                this.saveTimeout = null;
+                this.statusClearTimeout = null;
+                this.touchStartX = 0;
+                this.touchEndX = 0;
             }
 
-            getDOMElements() {
+            _getDOMElements() {
                 const elements = {};
                 for (const key in SELECTORS) {
                     elements[key] = document.querySelector(SELECTORS[key]);
@@ -606,63 +666,150 @@
                 return elements;
             }
 
-            async initializeApp() {
-                const [events, holidays] = await Promise.all([fetchAllEvents(), fetchHolidays()]);
+            async init() {
+                const [events, holidays] = await Promise.all([
+                    this.api.fetchEvents(),
+                    this.api.fetchHolidays()
+                ]);
                 this.state.events = events;
                 this.state.holidays = holidays;
 
-                this.renderCalendar();
-                this.initializeModalSortable();
-                this.bindEventListeners();
+                this._render(); 
+                this._initializeModalSortable();
+                this._bindEventListeners();
             }
 
-            bindEventListeners() {
-                this.elements.prevMonthBtn.addEventListener('click', () => this.changeMonth(-1));
-                this.elements.nextMonthBtn.addEventListener('click', () => this.changeMonth(1));
-                this.elements.addEventBtn.addEventListener('click', () => this.addEvent());
-                this.elements.newEventText.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') this.addEvent();
+            _bindEventListeners() {
+                this.elements.prevMonthBtn.addEventListener('click', () => this._changePeriod(-1));
+                this.elements.nextMonthBtn.addEventListener('click', () => this._changePeriod(1));
+                this.elements.addEventForm.addEventListener('submit', e => {
+                    e.preventDefault();
+                    this.addEvent();
                 });
                 this.elements.modalCloseBtn.addEventListener('click', () => this.closeModal());
-                this.elements.eventModal.addEventListener('click', (e) => {
+                this.elements.eventModal.addEventListener('click', e => {
                     if (e.target === this.elements.eventModal) this.closeModal();
                 });
-                this.elements.calendarBody.addEventListener('click', (e) => {
+                
+                this.elements.calendarBody.addEventListener('click', e => {
                     const cell = e.target.closest('td[data-date]');
                     if (!cell) return;
-
                     if (this.state.isDragModeEnabled && e.target.closest('li')) {
                         return;
                     }
                     this.openModal(cell.dataset.date);
                 });
                 this.elements.dragModeToggle.addEventListener('click', () => this.toggleDragMode());
+                this.elements.listViewToggle.addEventListener('click', () => this.toggleViewMode());
+
+                this.elements.listView.addEventListener('click', e => {
+                    const dayItem = e.target.closest('.list-view-day-item[data-date]');
+                    if (dayItem) {
+                        this.openModal(dayItem.dataset.date);
+                    }
+                });
+
+                this.elements.listView.addEventListener('touchstart', e => this.touchStartX = e.changedTouches[0].screenX, false);
+                this.elements.listView.addEventListener('touchend', e => {
+                    this.touchEndX = e.changedTouches[0].screenX;
+                    this._handleSwipe();
+                }, false);
+
+                this.elements.printListBtn.addEventListener('click', () => {
+                    this._prepareForPrint();
+                    window.print();
+                });
+            }
+
+            _handleSwipe() {
+                const swipeThreshold = 50;
+                if (this.touchEndX < this.touchStartX - swipeThreshold) {
+                    this._changePeriod(1);
+                }
+                if (this.touchEndX > this.touchStartX + swipeThreshold) {
+                    this._changePeriod(-1);
+                }
+            }
+
+            // --- State & Rendering ---
+            _updateState(newState) {
+                Object.assign(this.state, newState);
+                this._render(); 
+                this._debouncedSave();
+            }
+
+            _setSaveStatus(status, message, autoClearDelay = null) {
+                const statusEl = this.elements.saveStatus;
+                clearTimeout(this.statusClearTimeout);
+                
+                statusEl.textContent = message;
+                statusEl.className = `is-visible is-${status}`;
+
+                if (autoClearDelay) {
+                    this.statusClearTimeout = setTimeout(() => {
+                        statusEl.className = '';
+                    }, autoClearDelay);
+                }
+            }
+
+            _debouncedSave() {
+                clearTimeout(this.saveTimeout);
+                this._setSaveStatus('saving', '保存中...');
+
+                this.saveTimeout = setTimeout(async () => {
+                    try {
+                        await this.api.saveEvents(this.state.events);
+                        this._setSaveStatus('saved', '✓ 保存済み', 2000);
+                    } catch (error) {
+                        this._setSaveStatus('error', '保存に失敗しました');
+                    }
+                }, 1500);
+            }
+
+            _changePeriod(direction) {
+                if (this.state.isListViewEnabled) {
+                    this.state.currentDate.setDate(this.state.currentDate.getDate() + (7 * direction));
+                } else {
+                    this.state.currentDate.setMonth(this.state.currentDate.getMonth() + direction);
+                }
+                this._render(); 
             }
 
             toggleDragMode() {
                 this.state.isDragModeEnabled = !this.state.isDragModeEnabled;
                 const { dragModeToggle, calendarContainer } = this.elements;
+                dragModeToggle.textContent = this.state.isDragModeEnabled ? 'レイアウト編集を終了' : 'レイアウト編集を開始';
+                dragModeToggle.classList.toggle('active', this.state.isDragModeEnabled);
+                calendarContainer.classList.toggle(CLASSES.dragModeActive, this.state.isDragModeEnabled);
+                this._render(); 
+            }
 
-                if (this.state.isDragModeEnabled) {
-                    dragModeToggle.textContent = 'レイアウト編集を終了';
-                    dragModeToggle.classList.add('active');
-                    calendarContainer.classList.add(CLASSES.dragModeActive);
+            toggleViewMode() {
+                this.state.isListViewEnabled = !this.state.isListViewEnabled;
+                this._render();
+            }
+
+            _render() {
+                if (this.state.isListViewEnabled) {
+                    this.elements.calendarGridTable.style.display = 'none';
+                    this.elements.listView.style.display = 'block';
+                    this.elements.editModeContainer.style.display = 'none';
+                    this.elements.printListBtn.style.display = 'inline-block';
+                    this._renderListView();
                 } else {
-                    dragModeToggle.textContent = 'レイアウト編集を開始';
-                    dragModeToggle.classList.remove('active');
-                    calendarContainer.classList.remove(CLASSES.dragModeActive);
-                    this.destroyCalendarSortable();
+                    this.elements.calendarGridTable.style.display = 'table';
+                    this.elements.listView.style.display = 'none';
+                    this.elements.editModeContainer.style.display = 'block';
+                    this.elements.printListBtn.style.display = 'none';
+                    this._renderCalendar();
                 }
-                this.renderCalendar();
+                this.elements.listViewToggle.textContent = this.state.isListViewEnabled ? 'カレンダー表示' : 'リスト表示';
             }
 
-            changeMonth(direction) {
-                this.state.currentDate.setMonth(this.state.currentDate.getMonth() + direction);
-                this.renderCalendar();
-            }
-
-            renderCalendar() {
+            // --- Calendar Rendering ---
+            _renderCalendar() {
                 this.elements.calendarBody.innerHTML = '';
+                
                 const { year, month } = { year: this.state.currentDate.getFullYear(), month: this.state.currentDate.getMonth() };
                 this.elements.monthYear.textContent = `${year}年 ${month + 1}月`;
 
@@ -672,55 +819,102 @@
 
                 for (let i = 0; i < 6; i++) {
                     if (i > 0 && currentDay.getMonth() > month && currentDay.getFullYear() >= year) break;
-                    
                     const row = this.elements.calendarBody.insertRow();
-                    this.renderWeek(row, currentDay);
+                    this._renderWeek(row, new Date(currentDay));
+                    currentDay.setDate(currentDay.getDate() + 7);
                 }
                 
-                if (this.state.isDragModeEnabled) {
-                    this.initializeCalendarSortable();
-                }
+                if (this.state.isDragModeEnabled) this._initializeCalendarSortable();
+                else this._destroyCalendarSortable();
             }
 
-            // ★★★ ここからが修正箇所です ★★★
-            renderWeek(row, currentDay) {
-                this.renderPrintButtonCell(row, currentDay);
+            _renderListView() {
+                const listContainer = this.elements.listView.querySelector('.list-view-events');
+                if (listContainer) {
+                    listContainer.remove();
+                }
+
+                const tempDate = new Date(this.state.currentDate);
+                const dayOfWeek = tempDate.getDay();
+                const diff = tempDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                const monday = new Date(tempDate.setDate(diff));
+
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+                
+                const formatHeaderDate = (d) => {
+                    const year = d.getFullYear();
+                    const month = d.getMonth() + 1;
+                    const day = d.getDate();
+                    return { year, month, day };
+                };
+
+                const start = formatHeaderDate(monday);
+                const end = formatHeaderDate(sunday);
+
+                if (start.year !== end.year) {
+                    this.elements.monthYear.textContent = `${start.year}年${start.month}月${start.day}日 - ${end.year}年${end.month}月${end.day}日`;
+                } else if (start.month !== end.month) {
+                    this.elements.monthYear.textContent = `${start.year}年${start.month}月${start.day}日 - ${end.month}月${end.day}日`;
+                } else {
+                    this.elements.monthYear.textContent = `${start.year}年${start.month}月${start.day}日 - ${end.day}日`;
+                }
+
+                let listHtml = `<ul class="list-view-events">`;
+
+                for (let i = 0; i < 7; i++) {
+                    const date = new Date(monday);
+                    date.setDate(monday.getDate() + i);
+                    const dateStr = this._formatDate(date);
+                    const dayEvents = this.state.events[dateStr];
+                    const holidayName = this.state.holidays[dateStr];
+
+                    const hasEvents = dayEvents && dayEvents.length > 0;
+                    const liClass = `list-view-day-item ${!hasEvents ? 'has-no-events' : ''}`;
+
+                    listHtml += `<li class="${liClass.trim()}" data-date="${dateStr}">`;
+                    listHtml += `<div class="list-view-date-header">`;
+                    listHtml += `<strong>${date.getMonth() + 1}/${date.getDate()} (${['日', '月', '火', '水', '木', '金', '土'][date.getDay()]})</strong>`;
+                    if (holidayName) {
+                        listHtml += `<span class="list-view-holiday-name"> (${holidayName})</span>`;
+                    }
+                    listHtml += `</div>`;
+
+                    if (hasEvents) {
+                        listHtml += `<ul class="list-view-day-events">`;
+                        dayEvents.forEach(event => {
+                            const eventType = event.text.match(/【(.+?)】/);
+                            const typeClass = eventType ? `event-${eventType[1].toLowerCase()}` : 'event-default';
+                            const classMap = { 'event-醤油': 'event-shoyu', 'event-味噌': 'event-miso', 'event-納豆': 'event-natto', 'event-休み': 'event-yasumi' };
+                            const finalClass = classMap[typeClass] || 'event-default';
+                            // ★★★ 変更点: liの中にspanを生成してクラスを付与 ★★★
+                            listHtml += `<li class="list-view-event-item"><span class="${finalClass}">${event.text}</span></li>`;
+                        });
+                        listHtml += `</ul>`;
+                    } else {
+                        listHtml += `<p class="list-view-no-events">予定なし</p>`;
+                    }
+                    listHtml += `</li>`;
+                }
+
+                listHtml += `</ul>`;
+                this.elements.listView.insertAdjacentHTML('beforeend', listHtml);
+            }
+
+            _renderWeek(row, weekStartDate) {
                 for (let j = 0; j < 7; j++) {
+                    const date = new Date(weekStartDate);
+                    date.setDate(weekStartDate.getDate() + j);
                     const cell = row.insertCell();
-                    // すべてのセルに対して日付描画処理を呼び出す
-                    this.renderDayCell(cell, currentDay, j);
-                    
-                    // 当月でない場合は、スタイルを適用
-                    if (currentDay.getMonth() !== this.state.currentDate.getMonth()) {
+                    this._renderDayCell(cell, date, j);
+                    if (date.getMonth() !== this.state.currentDate.getMonth()) {
                         cell.classList.add(CLASSES.otherMonth);
                     }
-                    
-                    currentDay.setDate(currentDay.getDate() + 1);
                 }
             }
-            // ★★★ ここまでが修正箇所です ★★★
-
-            renderPrintButtonCell(row, currentDay) {
-                const cell = row.insertCell();
-                cell.className = 'print-week-btn-cell';
-                
-                const mondayOfWeek = new Date(currentDay);
-                mondayOfWeek.setDate(currentDay.getDate() + (currentDay.getDay() === 0 ? 1 : 1 - currentDay.getDay()));
-
-                if (mondayOfWeek.getMonth() === this.state.currentDate.getMonth() || (row.rowIndex === 0 && mondayOfWeek < new Date(this.state.currentDate.getFullYear(), this.state.currentDate.getMonth(), 1))) {
-                    const printBtn = document.createElement('button');
-                    printBtn.className = 'print-week-btn';
-                    printBtn.textContent = '🖨️';
-                    printBtn.onclick = (e) => {
-                        e.stopPropagation();
-                        this.prepareAndPrintWeek(mondayOfWeek);
-                    };
-                    cell.appendChild(printBtn);
-                }
-            }
-
-            renderDayCell(cell, date, dayOfWeek) {
-                const dateStr = this.formatDate(date);
+            
+            _renderDayCell(cell, date, dayOfWeek) {
+                const dateStr = this._formatDate(date);
                 cell.dataset.date = dateStr;
 
                 const dayHeader = document.createElement('div');
@@ -743,19 +937,18 @@
                 }
                 cell.appendChild(dayHeader);
 
-                const today = new Date();
-                if (this.formatDate(date) === this.formatDate(today)) {
+                if (dateStr === this._formatDate(new Date())) {
                     cell.classList.add(CLASSES.today);
                 }
 
                 const eventsList = document.createElement('ul');
                 eventsList.className = 'events-list';
                 const dayEvents = this.state.events[dateStr] || [];
-                dayEvents.forEach(event => eventsList.appendChild(this.createEventLi(event, 'calendar')));
+                dayEvents.forEach(event => eventsList.appendChild(this._createEventLi(event, 'calendar')));
                 cell.appendChild(eventsList);
             }
 
-            createEventLi(event, context) {
+            _createEventLi(event, context) {
                 const li = document.createElement('li');
                 li.dataset.eventId = event.id;
 
@@ -772,7 +965,7 @@
                 li.appendChild(textSpan);
 
                 if (context === 'modal') {
-                    textSpan.addEventListener('click', () => this.switchToEditMode(li, textSpan, event));
+                    textSpan.addEventListener('click', () => this._switchToEditMode(li, textSpan, event));
                     const deleteBtn = document.createElement('button');
                     deleteBtn.className = CLASSES.deleteEvent;
                     deleteBtn.textContent = '削除';
@@ -781,36 +974,29 @@
                 }
                 
                 const eventType = event.text.match(/【(.+?)】/);
-                if (eventType) {
-                    const typeClass = `event-${eventType[1].toLowerCase()}`;
-                    const classMap = { 'event-醤油': 'event-shoyu', 'event-味噌': 'event-miso', 'event-納豆': 'event-natto', 'event-休み': 'event-yasumi' };
-                    li.classList.add(classMap[typeClass] || 'event-default');
-                } else {
-                    li.classList.add('event-default');
-                }
+                const typeClass = eventType ? `event-${eventType[1].toLowerCase()}` : 'event-default';
+                const classMap = { 'event-醤油': 'event-shoyu', 'event-味噌': 'event-miso', 'event-納豆': 'event-natto', 'event-休み': 'event-yasumi' };
+                li.classList.add(classMap[typeClass] || 'event-default');
 
                 return li;
             }
 
+            // --- Modal ---
             openModal(dateStr) {
                 this.state.selectedDate = dateStr;
                 const holidayName = this.state.holidays[dateStr];
                 this.elements.eventDate.textContent = holidayName ? `${dateStr} (${holidayName})` : dateStr;
 
-                this.renderTemplateButtons();
-                this.renderModalEventsList();
+                this._renderTemplateButtons();
+                this._renderModalEventsList();
                 this.elements.eventModal.style.display = 'flex';
             }
 
-            async closeModal() {
+            closeModal() {
                 this.elements.eventModal.style.display = 'none';
-                await saveAllEvents(this.state.events);
-                const reloadedEvents = await fetchAllEvents();
-                this.state.events = reloadedEvents;
-                this.renderCalendar();
             }
 
-            renderTemplateButtons() {
+            _renderTemplateButtons() {
                 this.elements.templateButtons.innerHTML = '';
                 EVENT_TEMPLATES.forEach(template => {
                     const btn = document.createElement('button');
@@ -821,7 +1007,7 @@
                 });
             }
 
-            renderModalEventsList() {
+            _renderModalEventsList() {
                 this.elements.modalEventsList.innerHTML = '';
                 const dayEvents = this.state.events[this.state.selectedDate] || [];
                 if (dayEvents.length === 0) {
@@ -829,23 +1015,26 @@
                     return;
                 }
                 dayEvents.forEach(event => {
-                    this.elements.modalEventsList.appendChild(this.createEventLi(event, 'modal'));
+                    this.elements.modalEventsList.appendChild(this._createEventLi(event, 'modal'));
                 });
             }
 
+            // --- Event Actions ---
             addEvent(presetText = null) {
                 const text = presetText || this.elements.newEventText.value.trim();
                 if (!text || !this.state.selectedDate) return;
 
-                if (!this.state.events[this.state.selectedDate]) {
-                    this.state.events[this.state.selectedDate] = [];
+                const newEvent = { id: crypto.randomUUID(), text };
+                const newEvents = { ...this.state.events };
+                if (!newEvents[this.state.selectedDate]) {
+                    newEvents[this.state.selectedDate] = [];
                 }
-                const newEvent = { id: Date.now() + Math.random(), text: text };
-                this.state.events[this.state.selectedDate].push(newEvent);
-
-                if (!presetText) this.elements.newEventText.value = '';
-                this.renderModalEventsList();
-                this.renderCalendar();
+                newEvents[this.state.selectedDate].push(newEvent);
+                
+                this.elements.newEventText.value = '';
+                this.state.events = newEvents;
+                this._renderModalEventsList();
+                this._updateState({});
             }
 
             deleteEvent(eventId) {
@@ -856,23 +1045,21 @@
                 if (events[selectedDate].length === 0) {
                     delete events[selectedDate];
                 }
-                this.renderModalEventsList();
-                this.renderCalendar();
+                this._renderModalEventsList();
+                this._updateState({});
             }
 
             editEvent(eventId, newText) {
                 const { selectedDate, events } = this.state;
-                if (!selectedDate || !events[selectedDate]) return;
-
-                const eventToEdit = events[selectedDate].find(event => event.id === eventId);
+                const eventToEdit = events[selectedDate]?.find(event => event.id === eventId);
                 if (eventToEdit) {
                     eventToEdit.text = newText.trim();
+                    this._renderModalEventsList();
+                    this._updateState({});
                 }
-                this.renderModalEventsList();
-                this.renderCalendar();
             }
 
-            switchToEditMode(li, textSpan, event) {
+            _switchToEditMode(li, textSpan, event) {
                 const input = document.createElement('input');
                 input.type = 'text';
                 input.className = CLASSES.eventInput;
@@ -880,122 +1067,109 @@
 
                 li.insertBefore(input, textSpan);
                 li.removeChild(textSpan);
-
                 input.focus();
-                input.setSelectionRange(input.value.length, input.value.length);
 
-                const onBlur = () => {
+                const saveChanges = () => {
                     this.editEvent(event.id, input.value);
-                    input.removeEventListener('blur', onBlur);
-                    input.removeEventListener('keypress', onKeypress);
                 };
-                const onKeypress = (e) => {
-                    if (e.key === 'Enter') input.blur();
-                };
-
-                input.addEventListener('blur', onBlur);
-                input.addEventListener('keypress', onKeypress);
+                input.addEventListener('blur', saveChanges, { once: true });
+                input.addEventListener('keypress', e => { if (e.key === 'Enter') input.blur(); });
             }
 
-            initializeCalendarSortable() {
-                this.destroyCalendarSortable();
-                const lists = this.elements.calendarBody.querySelectorAll('.events-list');
-                lists.forEach(list => {
+            // --- SortableJS ---
+            _initializeCalendarSortable() {
+                this._destroyCalendarSortable();
+                this.elements.calendarBody.querySelectorAll('.events-list').forEach(list => {
                     const sortable = new Sortable(list, {
-                        group: 'shared-events',
-                        animation: 150,
-                        handle: `.${CLASSES.dragHandle}`,
-                        onEnd: (evt) => {
-                            const { from, to } = evt;
+                        group: 'shared-events', animation: 150, handle: `.${CLASSES.dragHandle}`,
+                        onEnd: evt => {
+                            const { from, to, oldIndex, newIndex, item } = evt;
+                            const eventId = item.dataset.eventId;
                             const oldDate = from.closest('td').dataset.date;
                             const newDate = to.closest('td').dataset.date;
-
-                            const oldArray = Array.from(from.children).map(li => ({ id: parseFloat(li.dataset.eventId), text: li.querySelector(`.${CLASSES.eventText}`).textContent }));
-                            if (oldArray.length > 0) this.state.events[oldDate] = oldArray;
-                            else delete this.state.events[oldDate];
-
-                            const newArray = Array.from(to.children).map(li => ({ id: parseFloat(li.dataset.eventId), text: li.querySelector(`.${CLASSES.eventText}`).textContent }));
-                            this.state.events[newDate] = newArray;
                             
-                            this.renderCalendar();
+                            const eventText = item.querySelector(`.${CLASSES.eventText}`).textContent;
+                            const movedEvent = { id: eventId, text: eventText };
+
+                            this.state.events[oldDate] = this.state.events[oldDate].filter(e => e.id !== eventId);
+                            if (this.state.events[oldDate].length === 0) delete this.state.events[oldDate];
+
+                            if (!this.state.events[newDate]) this.state.events[newDate] = [];
+                            this.state.events[newDate].splice(newIndex, 0, movedEvent);
+
+                            this._updateState({});
                         }
                     });
                     this.calendarSortableInstances.push(sortable);
                 });
             }
 
-            destroyCalendarSortable() {
+            _destroyCalendarSortable() {
                 this.calendarSortableInstances.forEach(instance => instance.destroy());
                 this.calendarSortableInstances = [];
             }
 
-            initializeModalSortable() {
+            _initializeModalSortable() {
                 if (this.modalSortable) this.modalSortable.destroy();
                 this.modalSortable = new Sortable(this.elements.modalEventsList, {
-                    animation: 150,
-                    handle: `.${CLASSES.dragHandle}`,
-                    onEnd: (evt) => {
+                    animation: 150, handle: `.${CLASSES.dragHandle}`,
+                    onEnd: evt => {
                         const newArray = Array.from(evt.target.children).map(li => {
-                            const eventId = parseFloat(li.dataset.eventId);
-                            const textElement = li.querySelector(`.${CLASSES.eventText}`) || li.querySelector(`.${CLASSES.eventInput}`);
-                            const eventText = textElement.tagName === 'INPUT' ? textElement.value : textElement.textContent;
-                            return { id: eventId, text: eventText };
+                            const eventId = li.dataset.eventId;
+                            const textEl = li.querySelector(`.${CLASSES.eventText}`) || li.querySelector(`.${CLASSES.eventInput}`);
+                            const text = textEl.tagName === 'INPUT' ? textEl.value : textEl.textContent;
+                            return { id: eventId, text };
                         });
                         this.state.events[this.state.selectedDate] = newArray;
-                        this.renderCalendar();
+                        this._updateState({});
                     }
                 });
             }
 
-            prepareAndPrintWeek(monday) {
-                const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
-                const saturday = new Date(monday);
-                saturday.setDate(monday.getDate() + 5);
+            // --- Print ---
+            _prepareForPrint() {
+                const tempDate = new Date(this.state.currentDate);
+                const dayOfWeek = tempDate.getDay();
+                const diff = tempDate.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                const monday = new Date(tempDate.setDate(diff));
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
 
-                let weekHtml = '';
-                for (let i = 0; i < 6; i++) {
-                    const date = new Date(monday);
-                    date.setDate(monday.getDate() + i);
-                    const dayOfWeek = date.getDay();
-                    if (dayOfWeek === 0) continue;
+                const formatHeaderDate = (d) => {
+                    const year = d.getFullYear();
+                    const month = d.getMonth() + 1;
+                    const day = d.getDate();
+                    return { year, month, day };
+                };
 
-                    const dateStr = this.formatDate(date);
-                    const dayEvents = this.state.events[dateStr] || [];
+                const start = formatHeaderDate(monday);
+                const end = formatHeaderDate(sunday);
+                let titleText;
 
-                    if (dayOfWeek <= 5 || (dayOfWeek === 6 && dayEvents.length > 0)) {
-                        let eventsHtml = '';
-                        if (dayEvents.length > 0) {
-                            eventsHtml = `<ul class="print-events">${dayEvents.map(e => `<li>${e.text}</li>`).join('')}</ul>`;
-                        } else {
-                            eventsHtml = `<p style="color: #888;">予定なし</p>`;
-                        }
-
-                        weekHtml += `
-                            <div class="print-day">
-                                <div class="print-day-header">
-                                    ${date.getMonth() + 1}/${date.getDate()} <span class="weekday">(${weekdays[dayOfWeek]})</span>
-                                </div>
-                                ${eventsHtml}
-                            </div>
-                        `;
-                    }
+                if (start.year !== end.year) {
+                    titleText = `${start.year}年${start.month}月${start.day}日 - ${end.year}年${end.month}月${end.day}日`;
+                } else if (start.month !== end.month) {
+                    titleText = `${start.year}年${start.month}月${start.day}日 - ${end.month}月${end.day}日`;
+                } else {
+                    titleText = `${start.year}年${start.month}月${start.day}日 - ${end.day}日`;
                 }
 
-                this.elements.printView.innerHTML = `
-                    <h1 class="print-header">週間予定</h1>
-                    <p class="print-sub-header">(${this.formatDate(monday, '/')} 〜 ${this.formatDate(saturday, '/')})</p>
-                    <div class="print-week">${weekHtml}</div>
-                `;
-                window.print();
+                this.elements.printTitle.textContent = `週間予定 (${titleText})`;
             }
 
-            formatDate(date, separator = '-') {
+            // --- Utility ---
+            _formatDate(date, separator = '-') {
                 const y = date.getFullYear();
                 const m = String(date.getMonth() + 1).padStart(2, '0');
                 const d = String(date.getDate()).padStart(2, '0');
-                return [y, m, d].join(separator);
+                return `${y}${separator}${m}${separator}${d}`;
             }
         }
+
+        // --- アプリケーションの起動 ---
+        const app = new CalendarApp();
+        app.init();
+    });
     </script>
 </body>
 </html>
