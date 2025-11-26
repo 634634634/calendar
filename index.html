@@ -336,19 +336,17 @@
             border-bottom: 1px solid #f0f0f0;
         }
 
-        /* ★★★ 変更点: レイアウト崩れ防止 ★★★ */
         #modal-events-list .event-text, #modal-events-list .event-input {
             flex-grow: 1;
             cursor: pointer;
             padding: 5px;
-            min-width: 0; /* テキストが長い場合にコンテナからはみ出すのを防ぐ */
+            min-width: 0; 
         }
         #modal-events-list .event-input {
             border: 1px solid var(--primary-color);
             border-radius: 4px;
         }
 
-        /* ★★★ 変更点: レイアウト崩れ防止 ★★★ */
         .delete-event {
             background: var(--secondary-color);
             color: var(--text-color-light);
@@ -358,7 +356,7 @@
             padding: 4px 8px;
             font-size: 0.8em;
             margin-left: 10px;
-            flex-shrink: 0; /* ボタンが縮まないようにする */
+            flex-shrink: 0; 
         }
 
         .add-event-form { display: flex; }
@@ -582,7 +580,6 @@
                 GAS: 'https://script.google.com/macros/s/AKfycbwT0kajqjvz9XxV9t1-_o8r6bH3fDK1zOYDf2gC1bKcOmxNxFc3BquUfCibDE22vmjO/exec',
                 HOLIDAYS: 'https://holidays-jp.github.io/api/v1/date.json',
             },
-            SWIPE_THRESHOLD: 50,
             SAVE_DEBOUNCE_MS: 1500,
         };
 
@@ -652,26 +649,29 @@
 
         // --- UIの描画担当 ---
         class ViewRenderer {
-            constructor(dom, state) {
+            constructor(dom, state, callbacks) {
                 this.dom = dom;
                 this.state = state;
+                this.callbacks = callbacks; // ★★★ 変更点: コールバックを受け取る
+            }
+
+            // ★★★ 変更点: ビューの表示/非表示を管理するメソッドを追加 ★★★
+            updateViewVisibility() {
+                const isList = this.state.isListViewEnabled;
+                this.dom.get('calendarGridTable').style.display = isList ? 'none' : 'table';
+                this.dom.get('listView').style.display = isList ? 'block' : 'none';
+                this.dom.get('editModeContainer').style.display = isList ? 'none' : 'block';
+                this.dom.get('printListBtn').style.display = isList ? 'inline-block' : 'none';
+                this.dom.get('listViewToggle').textContent = isList ? 'カレンダー表示' : 'リスト表示';
             }
 
             render() {
+                this.updateViewVisibility();
                 if (this.state.isListViewEnabled) {
-                    this.dom.get('calendarGridTable').style.display = 'none';
-                    this.dom.get('listView').style.display = 'block';
-                    this.dom.get('editModeContainer').style.display = 'none';
-                    this.dom.get('printListBtn').style.display = 'inline-block';
                     this.renderListView();
                 } else {
-                    this.dom.get('calendarGridTable').style.display = 'table';
-                    this.dom.get('listView').style.display = 'none';
-                    this.dom.get('editModeContainer').style.display = 'block';
-                    this.dom.get('printListBtn').style.display = 'none';
                     this.renderCalendar();
                 }
-                this.dom.get('listViewToggle').textContent = this.state.isListViewEnabled ? 'カレンダー表示' : 'リスト表示';
             }
 
             renderCalendar() {
@@ -781,12 +781,27 @@
                 ).join('');
 
                 const dayEvents = this.state.events[dateStr] || [];
-                if (dayEvents.length === 0) {
-                    this.dom.get('modalEventsList').innerHTML = '<li>予定はありません</li>';
-                } else {
-                    this.dom.get('modalEventsList').innerHTML = dayEvents.map(event => this._createEventLi(event, 'modal')).join('');
-                }
+                this.dom.get('modalEventsList').innerHTML = dayEvents.length
+                    ? dayEvents.map(event => this._createEventLi(event, 'modal')).join('')
+                    : '<li>予定はありません</li>';
+
                 this.dom.get('eventModal').style.display = 'flex';
+            }
+
+            // ★★★ 変更点: 編集モードへの切り替え処理をRendererに移動 ★★★
+            switchToEditMode(textSpan) {
+                const li = textSpan.parentElement;
+                const eventId = li.dataset.eventId;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'event-input';
+                input.value = textSpan.textContent;
+                li.insertBefore(input, textSpan);
+                li.removeChild(textSpan);
+                input.focus();
+                const save = () => this.callbacks.editEvent(eventId, input.value);
+                input.addEventListener('blur', save, { once: true });
+                input.addEventListener('keypress', e => { if (e.key === 'Enter') input.blur(); });
             }
 
             _createEventLi(event, context) {
@@ -845,12 +860,13 @@
                 this.dom = new DOMManager();
                 this.api = new ApiService();
                 this.state = new UIState();
-                this.renderer = new ViewRenderer(this.dom, this.state);
+                // ★★★ 変更点: Rendererにコールバックを渡す ★★★
+                this.renderer = new ViewRenderer(this.dom, this.state, {
+                    editEvent: (id, text) => this.editEvent(id, text)
+                });
                 
                 this.saveTimeout = null;
                 this.statusClearTimeout = null;
-                this.touchStartX = 0;
-                this.touchEndX = 0;
                 this.modalSortable = null;
                 this.calendarSortableInstances = [];
             }
@@ -865,12 +881,22 @@
                 this._initializeModalSortable();
             }
 
+            // ★★★ 変更点: イベントリスナー登録をメソッドに分割 ★★★
             _bindEventListeners() {
+                this._bindHeaderListeners();
+                this._bindViewListeners();
+                this._bindModalEventListeners();
+            }
+
+            _bindHeaderListeners() {
                 this.dom.get('prevMonthBtn').addEventListener('click', () => this.changePeriod(-1));
                 this.dom.get('nextMonthBtn').addEventListener('click', () => this.changePeriod(1));
                 this.dom.get('listViewToggle').addEventListener('click', () => this.toggleViewMode());
-                this.dom.get('dragModeToggle').addEventListener('click', () => this.toggleDragMode());
                 this.dom.get('printListBtn').addEventListener('click', () => this.printList());
+            }
+
+            _bindViewListeners() {
+                this.dom.get('dragModeToggle').addEventListener('click', () => this.toggleDragMode());
 
                 this.dom.get('calendarBody').addEventListener('click', e => {
                     const cell = e.target.closest('td[data-date]');
@@ -883,16 +909,6 @@
                     const dayItem = e.target.closest('.list-view-day-item[data-date]');
                     if (dayItem) this.openModal(dayItem.dataset.date);
                 });
-
-                this.dom.get('listView').addEventListener('touchstart', e => this.touchStartX = e.changedTouches[0].screenX, false);
-                this.dom.get('listView').addEventListener('touchend', e => {
-                    this.touchEndX = e.changedTouches[0].screenX;
-                    if (Math.abs(this.touchStartX - this.touchEndX) > CONFIG.SWIPE_THRESHOLD) {
-                        this.changePeriod(this.touchEndX < this.touchStartX ? 1 : -1);
-                    }
-                }, false);
-
-                this._bindModalEventListeners();
             }
 
             _bindModalEventListeners() {
@@ -914,7 +930,7 @@
                     if (e.target.classList.contains('delete-event')) {
                         this.deleteEvent(e.target.dataset.eventId);
                     } else if (e.target.classList.contains('event-text')) {
-                        this._switchToEditMode(e.target);
+                        this.renderer.switchToEditMode(e.target);
                     }
                 });
             }
@@ -958,9 +974,14 @@
                 btn.textContent = this.state.isDragModeEnabled ? 'レイアウト編集を終了' : 'レイアウト編集を開始';
                 btn.classList.toggle('active', this.state.isDragModeEnabled);
                 this.dom.get('calendarContainer').classList.toggle('drag-mode-active', this.state.isDragModeEnabled);
-                this.renderer.render();
-                if (this.state.isDragModeEnabled) this._initializeCalendarSortable();
-                else this._destroyCalendarSortable();
+                
+                this._renderOnly(); // isDragModeEnabledの状態だけ変更して再描画
+
+                if (this.state.isDragModeEnabled) {
+                    this._initializeCalendarSortable();
+                } else {
+                    this._destroyCalendarSortable();
+                }
             }
 
             printList() {
@@ -1002,25 +1023,10 @@
             editEvent(eventId, newText) {
                 const { selectedDate, events } = this.state;
                 const eventToEdit = events[selectedDate]?.find(event => event.id === eventId);
-                if (eventToEdit) {
+                if (eventToEdit && eventToEdit.text !== newText.trim()) {
                     this._updateDataAndRender(() => eventToEdit.text = newText.trim());
                 }
                 this.renderer.renderModal();
-            }
-
-            _switchToEditMode(textSpan) {
-                const li = textSpan.parentElement;
-                const eventId = li.dataset.eventId;
-                const input = document.createElement('input');
-                input.type = 'text';
-                input.className = 'event-input';
-                input.value = textSpan.textContent;
-                li.insertBefore(input, textSpan);
-                li.removeChild(textSpan);
-                input.focus();
-                const save = () => this.editEvent(eventId, input.value);
-                input.addEventListener('blur', save, { once: true });
-                input.addEventListener('keypress', e => { if (e.key === 'Enter') input.blur(); });
             }
 
             _setSaveStatus(status, message, autoClearDelay = null) {
