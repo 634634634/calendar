@@ -17,14 +17,14 @@
             --text-color-light: #fff;
             --bg-color: #f4f7f6;
             --border-color: #eee;
-            --holiday-color: #e57373;
+            --holiday-color: #e0535d;
             --saturday-color: #007bff;
             --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
             
             /* イベントごとの色 */
             --event-shoyu-bg: #343a40;
             --event-miso-bg: #28a745;
-            --event-natto-bg: #e57373;
+            --event-natto-bg: #e0535d;
             --event-yasumi-bg: #8a63d2;
             --event-default-bg: #e9c46a;
         }
@@ -329,20 +329,36 @@
         }
 
         #modal-events-list li {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 8px; border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid #f0f0f0;
         }
 
-        #modal-events-list .event-text { flex-grow: 1; cursor: pointer; padding: 5px; }
+        /* ★★★ 変更点: レイアウト崩れ防止 ★★★ */
+        #modal-events-list .event-text, #modal-events-list .event-input {
+            flex-grow: 1;
+            cursor: pointer;
+            padding: 5px;
+            min-width: 0; /* テキストが長い場合にコンテナからはみ出すのを防ぐ */
+        }
         #modal-events-list .event-input {
-            flex-grow: 1; border: 1px solid var(--primary-color);
-            border-radius: 4px; padding: 5px;
+            border: 1px solid var(--primary-color);
+            border-radius: 4px;
         }
 
+        /* ★★★ 変更点: レイアウト崩れ防止 ★★★ */
         .delete-event {
-            background: var(--secondary-color); color: var(--text-color-light);
-            border: none; border-radius: 4px; cursor: pointer;
-            padding: 4px 8px; font-size: 0.8em; margin-left: 10px;
+            background: var(--secondary-color);
+            color: var(--text-color-light);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 0.8em;
+            margin-left: 10px;
+            flex-shrink: 0; /* ボタンが縮まないようにする */
         }
 
         .add-event-form { display: flex; }
@@ -626,7 +642,6 @@
             constructor() {
                 this.events = {};
                 this.holidays = {};
-                // ★★★ 変更点: 日付管理をカレンダーとリストで分離 ★★★
                 this.calendarDate = new Date();
                 this.listDate = new Date();
                 this.selectedDate = null;
@@ -662,7 +677,6 @@
             renderCalendar() {
                 const calendarBody = this.dom.get('calendarBody');
                 calendarBody.innerHTML = '';
-                // ★★★ 変更点: カレンダー用の日付を使用 ★★★
                 const date = this.state.calendarDate;
                 const { year, month } = { year: date.getFullYear(), month: date.getMonth() };
                 this.dom.get('monthYear').textContent = `${year}年 ${month + 1}月`;
@@ -691,7 +705,6 @@
             _renderDayCell(cell, date) {
                 const dateStr = this._formatDate(date);
                 cell.dataset.date = dateStr;
-                // ★★★ 変更点: カレンダー用の日付を使用 ★★★
                 if (date.getMonth() !== this.state.calendarDate.getMonth()) cell.classList.add('other-month');
                 if (dateStr === this._formatDate(new Date())) cell.classList.add('today');
 
@@ -718,7 +731,6 @@
                 const listContainer = this.dom.get('listView').querySelector('.list-view-events');
                 if (listContainer) listContainer.remove();
 
-                // ★★★ 変更点: リスト用の日付を使用 ★★★
                 const { monday, sunday } = this._getWeekRange(this.state.listDate);
                 this.dom.get('monthYear').textContent = this._getWeekHeader(monday, sunday);
 
@@ -817,7 +829,6 @@
             }
 
             prepareForPrint() {
-                // ★★★ 変更点: リスト用の日付を使用 ★★★
                 const { monday, sunday } = this._getWeekRange(this.state.listDate);
                 const titleText = this._getWeekHeader(monday, sunday);
                 this.dom.get('printTitle').textContent = `週間予定 (${titleText})`;
@@ -848,7 +859,6 @@
                 const [events, holidays] = await Promise.all([this.api.fetchEvents(), this.api.fetchHolidays()]);
                 this.state.events = events;
                 this.state.holidays = holidays;
-                // ★★★ 変更点: リスト表示用日付を初期化 ★★★
                 this.state.listDate = new Date(this.state.calendarDate);
                 this.renderer.render();
                 this._bindEventListeners();
@@ -922,7 +932,6 @@
 
             changePeriod(direction) {
                 this._renderOnly(() => {
-                    // ★★★ 変更点: 表示モードに応じて更新する日付を変更 ★★★
                     if (this.state.isListViewEnabled) {
                         this.state.listDate.setDate(this.state.listDate.getDate() + (7 * direction));
                     } else {
@@ -936,7 +945,6 @@
                     this.toggleDragMode(); 
                 }
                 this._renderOnly(() => {
-                    // ★★★ 変更点: カレンダーからリストへ移る際に日付を同期 ★★★
                     if (!this.state.isListViewEnabled) {
                         this.state.listDate = new Date(this.state.calendarDate);
                     }
